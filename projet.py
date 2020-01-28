@@ -35,16 +35,14 @@ def create_nodes_edges(gr,dico,nodes):
   for key in dico.keys():
     locus=dico[key]["locus1"]
     if locus not in nodes.keys():
-      nodes[locus]=gr.addNode()
+      nodes[locus]={}
+      nodes[locus]={'node':gr.addNode()}
     locus2=dico[key]["locus2"]
     if locus2 not in nodes.keys():
-      nodes[locus2]=gr.addNode()
-    dico[key]['edge']=gr.addEdge(nodes[locus],nodes[locus2])
+      nodes[locus2]={}
+      nodes[locus2]={'node':gr.addNode()}
+    dico[key]['edge']=gr.addEdge(nodes[locus]['node'],nodes[locus2]['node'])
 
-
-def construireGraph(gr,locus1,locus2,distances,edges,nodes):
-  for n in range(len(locus1)):
-    gr.addNode()
 
 
 # The updateVisualization(centerViews = True) function can be called
@@ -96,5 +94,4 @@ def main(graph):
   viewTgtAnchorShape = graph.getIntegerProperty("viewTgtAnchorShape")
   viewTgtAnchorSize = graph.getSizeProperty("viewTgtAnchorSize")
 
-  for n in graph.getNodes():
-    print(n)
+
