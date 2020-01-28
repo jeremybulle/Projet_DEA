@@ -33,13 +33,13 @@ def importData(data):
 
 def create_nodes_edges(gr,dico,nodes):
     for key in dico.keys():
-        locus=dico[key]["locus1"]
-        if locus not in nodes.keys():
-            nodes[locus]=gr.addNode()
-        locus2=dico[key]["locus2"]
-        if locus2 not in nodes.keys():
-            nodes[locus2]=gr.addNode()
-        dico[key]['edge']=gr.addEdge(nodes[locus1],nodes[locus2])
+      locus=dico[key]["locus1"]
+      if locus not in nodes.keys():
+        nodes[locus]=gr.addNode()
+      locus2=dico[key]["locus2"]
+      if locus2 not in nodes.keys():
+        nodes[locus2]=gr.addNode()
+      dico[key]['edge']=gr.addEdge(nodes[locus],nodes[locus2])
 
 
 def construireGraph(gr,locus1,locus2,distances,edges,nodes):
