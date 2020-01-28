@@ -17,7 +17,8 @@ from tulip import *
 from collections import deque
 import csv
 
-def importData(data, locus1, locus2, distances, interaction):
+def importData(data):
+  interraction_dict ={}
   wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/'
   file = 'interactions_chromosome6.csv'
   with open (wd+file, newline ='') as csvfile:
@@ -25,12 +26,10 @@ def importData(data, locus1, locus2, distances, interaction):
   data.pop(0)
   lendata = len(data)
   for i in range(lendata):
-    locus1.append(data[i][1])
-    locus2.append(data[i][2])
-    interaction.append(data[i][3])
-    distances.append(data[i][4])
+    nom_interraction = data[i][1] + "_" + data[i][2]
+    interraction_dict[nom_interraction] = {"locus1" : data[i][1], "locus2" : data[i][2], "interraction" : data[i][3], "distance": data[i][4]}
     i +=1
-  return data, locus1, locus2, distances, interaction
+  return interraction_dict
 
 def construireGraph(gr,locus1,locus2,distances,edges,nodes):
   for n in range(len(locus1)):
@@ -58,6 +57,7 @@ def main(graph):
   distances = []
   nodes = {}
   edges = {}
+  interract_dict = {}
 
   importData(data, locus1, locus2, distances, interaction)
 
