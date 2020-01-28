@@ -19,7 +19,7 @@ import csv
 
 def importData(data):
   interraction_dict ={}
-  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/'
+  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/Projet_DEA/'
   file = 'interactions_chromosome6.csv'
   with open (wd+file, newline ='') as csvfile:
     data = list(csv.reader(csvfile, delimiter ='\t'))
@@ -30,6 +30,17 @@ def importData(data):
     interraction_dict[nom_interraction] = {"locus1" : data[i][1], "locus2" : data[i][2], "interraction" : data[i][3], "distance": data[i][4]}
     i +=1
   return interraction_dict
+
+def create_nodes_edges(gr,dico,nodes):
+    for key in dico.keys():
+        locus=dico[key]["locus1"]
+        if locus not in nodes.keys():
+            nodes[locus]=gr.addNode()
+        locus2=dico[key]["locus2"]
+        if locus2 not in nodes.keys():
+            nodes[locus2]=gr.addNode()
+        dico[key]['edge']=gr.addEdge(nodes[locus1],nodes[locus2])
+
 
 def construireGraph(gr,locus1,locus2,distances,edges,nodes):
   for n in range(len(locus1)):
@@ -59,8 +70,8 @@ def main(graph):
   edges = {}
   interract_dict = {}
 
-  importData(data, locus1, locus2, distances, interaction)
-
+  interraction_dict=importData(data)
+  create_nodes_edges(graph, interraction_dict, nodes)
   construireGraph(graph, locus1, locus2, distances, edges,nodes)
 
   viewBorderColor = graph.getColorProperty("viewBorderColor")
