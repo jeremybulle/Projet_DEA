@@ -3,7 +3,7 @@
 # To cancel the modifications performed by the script
 # on the current graph, click on the undo button.
 
-# Some useful keyboards shortcuts : 
+# Some useful keyboards shortcuts :
 #   * Ctrl + D : comment selected lines.
 #   * Ctrl + Shift + D  : uncomment selected lines.
 #   * Ctrl + I : indent selected lines.
@@ -18,7 +18,7 @@ from collections import deque
 import csv
 
 def importData(data, locus1, locus2, distances, interaction):
-  wd = '/media/yprevot/BOCK_USB/TULIPYann/PROJET/'
+  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/'
   file = 'interactions_chromosome6.csv'
   with open (wd+file, newline ='') as csvfile:
     data = list(csv.reader(csvfile, delimiter ='\t'))
@@ -47,10 +47,10 @@ def construireGraph(gr,locus1,locus2,distances,edges,nodes):
 # another edited script on a tlp.Graph object.
 # The scriptFile parameter defines the script name to call (in the form [a-zA-Z0-9_]+.py)
 
-# The main(graph) function must be defined 
+# The main(graph) function must be defined
 # to run the script on the current graph
 
-def main(graph): 
+def main(graph):
   data = []
   locus1 = []
   locus2 = []
@@ -60,9 +60,9 @@ def main(graph):
   edges = {}
 
   importData(data, locus1, locus2, distances, interaction)
-  
+
   construireGraph(graph, locus1, locus2, distances, edges,nodes)
-  
+
   viewBorderColor = graph.getColorProperty("viewBorderColor")
   viewBorderWidth = graph.getDoubleProperty("viewBorderWidth")
   viewColor = graph.getColorProperty("viewColor")
