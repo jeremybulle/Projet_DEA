@@ -32,14 +32,14 @@ def importData(data):
   return interraction_dict
 
 def create_nodes_edges(gr,dico,nodes):
-    for key in dico.keys():
-      locus=dico[key]["locus1"]
-      if locus not in nodes.keys():
-        nodes[locus]=gr.addNode()
-      locus2=dico[key]["locus2"]
-      if locus2 not in nodes.keys():
-        nodes[locus2]=gr.addNode()
-      dico[key]['edge']=gr.addEdge(nodes[locus],nodes[locus2])
+  for key in dico.keys():
+    locus=dico[key]["locus1"]
+    if locus not in nodes.keys():
+      nodes[locus]=gr.addNode()
+    locus2=dico[key]["locus2"]
+    if locus2 not in nodes.keys():
+      nodes[locus2]=gr.addNode()
+    dico[key]['edge']=gr.addEdge(nodes[locus],nodes[locus2])
 
 
 def construireGraph(gr,locus1,locus2,distances,edges,nodes):
@@ -72,7 +72,6 @@ def main(graph):
 
   interraction_dict=importData(data)
   create_nodes_edges(graph, interraction_dict, nodes)
-  construireGraph(graph, locus1, locus2, distances, edges,nodes)
 
   viewBorderColor = graph.getColorProperty("viewBorderColor")
   viewBorderWidth = graph.getDoubleProperty("viewBorderWidth")
