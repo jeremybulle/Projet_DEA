@@ -17,7 +17,7 @@ from tulip import *
 from collections import deque
 import csv
 
-def importData(data):
+def importData():
   interraction_dict ={}
   wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/Projet_DEA/'
   file = 'interactions_chromosome6.csv'
@@ -30,6 +30,17 @@ def importData(data):
     interraction_dict[nom_interraction] = {"locus1" : data[i][1], "locus2" : data[i][2], "interraction" : data[i][3], "distance": data[i][4]}
     i +=1
   return interraction_dict
+
+def importData2(nodes):
+  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/Projet_DEA/'
+  file = 'chromosome6_fragments_expressions.csv'
+  with open(wd+file, newline='') as csvfile:
+    read=list(csv.reader(csvfile, delimiter='\t'))
+  read.pop(0)
+  lenread=len(read)
+  for ligne in range(lenread):
+    if read[ligne][1] in nodes.keys():
+      nodes[read[ligne][1]]['expression']=read[ligne][2]
 
 def create_nodes_edges(gr,dico,nodes):
   for key in dico.keys():
@@ -59,7 +70,6 @@ def create_nodes_edges(gr,dico,nodes):
 # to run the script on the current graph
 
 def main(graph):
-  data = []
   locus1 = []
   locus2 = []
   interaction = []
@@ -68,8 +78,9 @@ def main(graph):
   edges = {}
   interract_dict = {}
 
-  interraction_dict=importData(data)
+  interraction_dict=importData()
   create_nodes_edges(graph, interraction_dict, nodes)
+  importData2(nodes)
 
   viewBorderColor = graph.getColorProperty("viewBorderColor")
   viewBorderWidth = graph.getDoubleProperty("viewBorderWidth")
