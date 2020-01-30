@@ -17,13 +17,25 @@ from tulip import *
 from collections import deque
 import csv
 
-def importData():
-  interraction_dict ={}
+def ouvrir_fichier(fichier, header=True):
+  #Ouvre un fichier .tsv et le renvoie sous forme d'une liste
+  #fichier = nom du fichier à ouvrir
+  #header = True si le fichier contient un header
+  #header = False si le fichier ne contient pas de header
+  #return données sous forme de liste.
   wd = '/net/stockage/TulipDEA/'
-  file = 'interactions_chromosome6.csv'
-  with open (wd+file, newline ='') as csvfile:
+  with open (wd+fichier, newline ='') as csvfile:
     data = list(csv.reader(csvfile, delimiter ='\t'))
-  data.pop(0)
+  if (header):
+    data.pop(0)
+  return data
+
+def importData():
+  #importe et structure les données du fichier interactions_chromosome6.csv dans un dictionnaire d'arêtes
+  #chaque clé correspond à une arête avec comme valeurs les noms des deux gènes en relation, le type et la distance d'interraction qui lie ces deux gènes
+  #renvoit le dictionnaire des arêtes annotées
+  interraction_dict ={}
+  data = ouvrir_fichier('interactions_chromosome6.csv')
   lendata = len(data)
   for i in range(lendata):
     nom_interraction = data[i][1] + "_" + data[i][2]
@@ -31,72 +43,77 @@ def importData():
     i +=1
   return interraction_dict
 
-def import_chromosome6_fragments_expressions(nodes, expression):
-  wd = '/net/stockage/TulipDEA/'
-  file = 'chromosome6_fragments_expressions.csv'
-  with open(wd+file, newline='') as csvfile:
-    read=list(csv.reader(csvfile, delimiter='\t'))
-  read.pop(0)
+def import_chromosome6_fragments_expressions(nodes):
+  #ajoute les informations des gènes préimplémentés contenues dans le fichier chromosome6_fragments_expressions.csv
+  #nodes = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
+  read=ouvrir_fichier('chromosome6_fragments_expressions.csv')
   lenread=len(read)
   for ligne in range(lenread):
     if read[ligne][1] in nodes.keys():
       nodes[read[ligne][1]]["expression"]=read[ligne][2]
 
-def import_metabos(nodes, edges):
-  wd = '/net/stockage/TulipDEA/'
-  file = 'KEGG.symbols.csv'
-  with open(wd+file, newline='') as csvfile:
-    read=list(csv.reader(csvfile, delimiter='\t'))
+def import_metabos(nodes):
+  #ajoute les informations des gènes préimplémentés contenues dans les fichiers KEGG.symbols.csv et REACTOME.symbols.csv
+  #nodes = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
+  read=ouvrir_fichier('KEGG.symbols.csv', False)
   for ligne in range(len(read)):
     for index_gene in range(2,len(read[ligne])):
       if read[ligne][index_gene] in nodes.keys():
         nodes[read[ligne][index_gene]]["metabo"].append(read[ligne][0])
-  file = 'REACTOME.symbols.csv'
-  with open(wd+file, newline='') as csvfile:
-    read=list(csv.reader(csvfile, delimiter='\t'))
+  read=ouvrir_fichier('REACTOME.symbols.csv', False)
   for ligne in range(len(read)):
     for index_gene in range(2,len(read[ligne])):
       if read[ligne][index_gene] in nodes.keys():
         nodes[read[ligne][index_gene]]["reactome"].append(read[ligne][0])
 
-def create_nodes_edges(gr,dico,nodes):
-  for key in dico.keys():
-    locus=dico[key]["locus1"]
+def create_nodes_edges(gr,edges,nodes):
+  #Crée les noeuds et arêtes d'après le dictionnaire des arêtes annotées
+  #et les rend accessible respectivement par le biais des disctionnaires des noeuds et des arêtes
+  #gr = graphe sur lequel appliquer les opérations
+  #edges = dictionnaire des arêtes
+  #nodes = dictionnaire des noeuds
+  for key in edges.keys():
+    locus=edges[key]["locus1"]
     if locus not in nodes.keys():
       nodes[locus]={}
       nodes[locus]={"node":gr.addNode(), "metabo":[], "reactome":[]}
-    locus2=dico[key]["locus2"]
+    locus2=edges[key]["locus2"]
     if locus2 not in nodes.keys():
       nodes[locus2]={}
       nodes[locus2]={"node":gr.addNode(), "metabo":[], "reactome":[]}
-    dico[key]["edge"]=gr.addEdge(nodes[locus]["node"],nodes[locus2]["node"])
+    edges[key]["edge"]=gr.addEdge(nodes[locus]["node"],nodes[locus2]["node"])
 
-def ajouter_metrics(nodes, metrics, edges, color, label):
+def ajouter_metrics(nodes, metrics, edges):
+  #ajoute toutes les annotations des différents fichiers sur les noeuds/arêtes
+  #nodes = dictionnaire des noeuds
+  #edges = dictionnaire des arêtes
+  #metrics = liste des différentes metrics
   for node in nodes.keys():
-#    label[nodes[node]["node"]]=node
+#   metrics["label"][nodes[node]["node"]]=node
+    metrics["ID"][nodes[node]["node"]]=node
     exp=nodes[node]["expression"]
     metrics["expression"][nodes[node]["node"]]=exp
     if exp=="intergenic":
-      color[nodes[node]["node"]]=tlp.Color(255,255,255)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(255,255,255)
     elif exp=="NA":
-      color[nodes[node]["node"]]=tlp.Color(0,0,0)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(0,0,0)
     elif exp=="up":
-      color[nodes[node]["node"]]=tlp.Color(0,255,0)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(0,255,0)
     elif exp=="down":
-      color[nodes[node]["node"]]=tlp.Color(255,0,0)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(255,0,0)
     elif exp=="stable":
-      color[nodes[node]["node"]]=tlp.Color(125,125,125)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(125,125,125)
     if len(nodes[node]["reactome"])!=0:
       metrics["reactome"][nodes[node]["node"]]=nodes[node]["reactome"]
     if len(nodes[node]["metabo"])!=0:
       metrics["metabo"][nodes[node]["node"]]=nodes[node]["metabo"]
   for edge in edges.keys():
     if edges[edge]["interraction"]=="gain":
-      color[edges[edge]["edge"]]=tlp.Color(0,255,0)
+      metrics["color"][edges[edge]["edge"]]=tlp.Color(0,255,0)
     if edges[edge]["interraction"]=="loss":
-      color[edges[edge]["edge"]]=tlp.Color(255,0,0)
+      metrics["color"][edges[edge]["edge"]]=tlp.Color(255,0,0)
     if edges[edge]["interraction"]=="stable":
-      color[edges[edge]["edge"]]=tlp.Color(200,200,200)
+      metrics["color"][edges[edge]["edge"]]=tlp.Color(200,200,200)
     metrics["distance"][edges[edge]["edge"]]=int(edges[edge]["distance"])
     metrics["interraction"][edges[edge]["edge"]]=edges[edge]["interraction"]
   return 0
@@ -118,15 +135,9 @@ def main(graph):
   '''
   viewBorderColor = graph.getColorProperty("viewBorderColor")
   viewBorderWidth = graph.getDoubleProperty("viewBorderWidth")
-  '''
-  viewColor = graph.getColorProperty("viewColor")
-  '''
   viewFont = graph.getStringProperty("viewFont")
   viewFontSize = graph.getIntegerProperty("viewFontSize")
   viewIcon = graph.getStringProperty("viewIcon")
-  '''
-  viewLabel = graph.getStringProperty("viewLabel")
-  '''
   viewLabelBorderColor = graph.getColorProperty("viewLabelBorderColor")
   viewLabelBorderWidth = graph.getDoubleProperty("viewLabelBorderWidth")
   viewLabelColor = graph.getColorProperty("viewLabelColor")
@@ -145,23 +156,21 @@ def main(graph):
   '''
   
   Metrics={}
+  Metrics["color"] = graph.getColorProperty("viewColor")
+  Metrics["label"] = graph.getStringProperty("viewLabel")
+  Metrics["ID"]=graph.getStringProperty("ID")
   Metrics["expression"]=graph.getStringProperty("expression")
   Metrics["distance"]=graph.getDoubleProperty("distance")
   Metrics["interraction"]=graph.getStringProperty("interaction")
   Metrics["reactome"]=graph.getStringVectorProperty("reactome")
   Metrics["metabo"]=graph.getStringVectorProperty("metabo")
 
-  locus1 = []
-  locus2 = []
-  interaction = []
-  distances = []
   nodes = {}
-  edges = {}
   interract_dict = {}
 
   interraction_dict=importData()
   create_nodes_edges(graph, interraction_dict, nodes)
-  import_chromosome6_fragments_expressions(nodes, Metrics["expression"])
-  import_metabos(nodes, interraction_dict)
-  ajouter_metrics(nodes, Metrics, interraction_dict, viewColor, viewLabel)  
+  import_chromosome6_fragments_expressions(nodes)
+  import_metabos(nodes)
+  ajouter_metrics(nodes, Metrics, interraction_dict)  
   
