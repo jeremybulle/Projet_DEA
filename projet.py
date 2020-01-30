@@ -19,7 +19,7 @@ import csv
 
 def importData():
   interraction_dict ={}
-  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/Projet_DEA/'
+  wd = '/net/stockage/TulipDEA/'
   file = 'interactions_chromosome6.csv'
   with open (wd+file, newline ='') as csvfile:
     data = list(csv.reader(csvfile, delimiter ='\t'))
@@ -32,7 +32,7 @@ def importData():
   return interraction_dict
 
 def import_chromosome6_fragments_expressions(nodes, expression):
-  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/Projet_DEA/'
+  wd = '/net/stockage/TulipDEA/'
   file = 'chromosome6_fragments_expressions.csv'
   with open(wd+file, newline='') as csvfile:
     read=list(csv.reader(csvfile, delimiter='\t'))
@@ -43,7 +43,7 @@ def import_chromosome6_fragments_expressions(nodes, expression):
       nodes[read[ligne][1]]["expression"]=read[ligne][2]
 
 def import_metabos(nodes, edges):
-  wd = '/autofs/unityaccount/cremi/ahucteau/Semestre_9/DEA/Tulip_projet/Projet_DEA/'
+  wd = '/net/stockage/TulipDEA/'
   file = 'KEGG.symbols.csv'
   with open(wd+file, newline='') as csvfile:
     read=list(csv.reader(csvfile, delimiter='\t'))
@@ -71,14 +71,32 @@ def create_nodes_edges(gr,dico,nodes):
       nodes[locus2]={"node":gr.addNode(), "metabo":[], "reactome":[]}
     dico[key]["edge"]=gr.addEdge(nodes[locus]["node"],nodes[locus2]["node"])
 
-def ajouter_metrics(nodes, metrics, edges):
+def ajouter_metrics(nodes, metrics, edges, color, label):
   for node in nodes.keys():
-    metrics["expression"][nodes[node]["node"]]=nodes[node]["expression"]
+#    label[nodes[node]["node"]]=node
+    exp=nodes[node]["expression"]
+    metrics["expression"][nodes[node]["node"]]=exp
+    if exp=="intergenic":
+      color[nodes[node]["node"]]=tlp.Color(255,255,255)
+    elif exp=="NA":
+      color[nodes[node]["node"]]=tlp.Color(0,0,0)
+    elif exp=="up":
+      color[nodes[node]["node"]]=tlp.Color(0,255,0)
+    elif exp=="down":
+      color[nodes[node]["node"]]=tlp.Color(255,0,0)
+    elif exp=="stable":
+      color[nodes[node]["node"]]=tlp.Color(125,125,125)
     if len(nodes[node]["reactome"])!=0:
       metrics["reactome"][nodes[node]["node"]]=nodes[node]["reactome"]
     if len(nodes[node]["metabo"])!=0:
       metrics["metabo"][nodes[node]["node"]]=nodes[node]["metabo"]
   for edge in edges.keys():
+    if edges[edge]["interraction"]=="gain":
+      color[edges[edge]["edge"]]=tlp.Color(0,255,0)
+    if edges[edge]["interraction"]=="loss":
+      color[edges[edge]["edge"]]=tlp.Color(255,0,0)
+    if edges[edge]["interraction"]=="stable":
+      color[edges[edge]["edge"]]=tlp.Color(200,200,200)
     metrics["distance"][edges[edge]["edge"]]=int(edges[edge]["distance"])
     metrics["interraction"][edges[edge]["edge"]]=edges[edge]["interraction"]
   return 0
@@ -100,11 +118,15 @@ def main(graph):
   '''
   viewBorderColor = graph.getColorProperty("viewBorderColor")
   viewBorderWidth = graph.getDoubleProperty("viewBorderWidth")
+  '''
   viewColor = graph.getColorProperty("viewColor")
+  '''
   viewFont = graph.getStringProperty("viewFont")
   viewFontSize = graph.getIntegerProperty("viewFontSize")
   viewIcon = graph.getStringProperty("viewIcon")
+  '''
   viewLabel = graph.getStringProperty("viewLabel")
+  '''
   viewLabelBorderColor = graph.getColorProperty("viewLabelBorderColor")
   viewLabelBorderWidth = graph.getDoubleProperty("viewLabelBorderWidth")
   viewLabelColor = graph.getColorProperty("viewLabelColor")
@@ -141,5 +163,5 @@ def main(graph):
   create_nodes_edges(graph, interraction_dict, nodes)
   import_chromosome6_fragments_expressions(nodes, Metrics["expression"])
   import_metabos(nodes, interraction_dict)
-  ajouter_metrics(nodes, Metrics, interraction_dict)  
+  ajouter_metrics(nodes, Metrics, interraction_dict, viewColor, viewLabel)  
   
