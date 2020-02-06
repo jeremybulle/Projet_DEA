@@ -94,7 +94,7 @@ def ajouter_metrics(nodes, metrics, edges):
     exp=nodes[node]["expression"]
     metrics["expression"][nodes[node]["node"]]=exp
     if exp=="intergenic":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(255,255,255)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(200,200,200)
     elif exp=="NA":
       metrics["color"][nodes[node]["node"]]=tlp.Color(0,0,0)
     elif exp=="up":
@@ -102,7 +102,7 @@ def ajouter_metrics(nodes, metrics, edges):
     elif exp=="down":
       metrics["color"][nodes[node]["node"]]=tlp.Color(255,0,0)
     elif exp=="stable":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(125,125,125)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(100,100,100)
     if len(nodes[node]["reactome"])!=0:
       metrics["reactome"][nodes[node]["node"]]=nodes[node]["reactome"]
     if len(nodes[node]["metabo"])!=0:
@@ -115,8 +115,17 @@ def ajouter_metrics(nodes, metrics, edges):
     if edges[edge]["interraction"]=="stable":
       metrics["color"][edges[edge]["edge"]]=tlp.Color(200,200,200)
     metrics["distance"][edges[edge]["edge"]]=int(edges[edge]["distance"])
+    metrics["distanceGraph"][edges[edge]["edge"]]=int(edges[edge]["distance"])/100000
     metrics["interraction"][edges[edge]["edge"]]=edges[edge]["interraction"]
   return 0
+
+def create_subgraph(gr, metrics, nodes):
+  list_nodes=[]
+  for node in nodes.keys():
+    if (len(nodes[node]["metabo"])!=0 or len(nodes[node]["reactome"])!=0) and (nodes[node]["expression"]=="up" or nodes[node]["expression"]=="down"):
+      list_nodes.append(nodes[node]["node"])
+  gr.inducedSubGraph(list_nodes, gr, "test")
+
 
 # The updateVisualization(centerViews = True) function can be called
 # during script execution to update the opened views
@@ -142,7 +151,6 @@ def main(graph):
   viewLabelBorderWidth = graph.getDoubleProperty("viewLabelBorderWidth")
   viewLabelColor = graph.getColorProperty("viewLabelColor")
   viewLabelPosition = graph.getIntegerProperty("viewLabelPosition")
-  viewLayout = graph.getLayoutProperty("viewLayout")
   viewMetric = graph.getDoubleProperty("viewMetric")
   viewRotation = graph.getDoubleProperty("viewRotation")
   viewSelection = graph.getBooleanProperty("viewSelection")
@@ -154,6 +162,7 @@ def main(graph):
   viewTgtAnchorShape = graph.getIntegerProperty("viewTgtAnchorShape")
   viewTgtAnchorSize = graph.getSizeProperty("viewTgtAnchorSize")
   '''
+  viewLayout = graph.getLayoutProperty("viewLayout")
   
   Metrics={}
   Metrics["color"] = graph.getColorProperty("viewColor")
@@ -161,16 +170,27 @@ def main(graph):
   Metrics["ID"]=graph.getStringProperty("ID")
   Metrics["expression"]=graph.getStringProperty("expression")
   Metrics["distance"]=graph.getDoubleProperty("distance")
+  Metrics["distanceGraph"]=graph.getDoubleProperty("distanceGraph")
   Metrics["interraction"]=graph.getStringProperty("interaction")
   Metrics["reactome"]=graph.getStringVectorProperty("reactome")
   Metrics["metabo"]=graph.getStringVectorProperty("metabo")
 
   nodes = {}
   interract_dict = {}
-
+  
+  
+  
   interraction_dict=importData()
   create_nodes_edges(graph, interraction_dict, nodes)
   import_chromosome6_fragments_expressions(nodes)
   import_metabos(nodes)
   ajouter_metrics(nodes, Metrics, interraction_dict)  
   
+  params = tlp.getDefaultPluginParameters("FM^3 (OGDF)", graph)
+  params["Edge Length Property"] = Metrics["distanceGraph"]
+  success = graph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout, params)
+  
+  paramsPAR = tlp.getDefaultPluginParameters('Perfect aspect ratio', graph)
+  success = graph.applyLayoutAlgorithm('Perfect aspect ratio', viewLayout, paramsPAR)
+
+  create_subgraph(graph, Metrics, nodes)
