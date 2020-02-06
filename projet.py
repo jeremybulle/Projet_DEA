@@ -55,16 +55,24 @@ def import_chromosome6_fragments_expressions(nodes):
 def import_metabos(nodes):
   #ajoute les informations des gènes préimplémentés contenues dans les fichiers KEGG.symbols.csv et REACTOME.symbols.csv
   #nodes = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
+  Kegg={}
   read=ouvrir_fichier('KEGG.symbols.csv', False)
   for ligne in range(len(read)):
+    Kegg[read[ligne][0]]={}
     for index_gene in range(2,len(read[ligne])):
       if read[ligne][index_gene] in nodes.keys():
-        nodes[read[ligne][index_gene]]["metabo"].append(read[ligne][0])
+        Kegg[read[ligne][0]][read[ligne][index_gene]]=nodes[read[ligne][index_gene]]
+        nodes[read[ligne][index_gene]]["metabo"][read[ligne][0]]=Kegg[read[ligne][0]]
+  Reactome={}
   read=ouvrir_fichier('REACTOME.symbols.csv', False)
   for ligne in range(len(read)):
+    Reactome[read[ligne][0]]={}
     for index_gene in range(2,len(read[ligne])):
       if read[ligne][index_gene] in nodes.keys():
-        nodes[read[ligne][index_gene]]["reactome"].append(read[ligne][0])
+        Reactome[read[ligne][0]][read[ligne][index_gene]]=nodes[read[ligne][index_gene]]
+        nodes[read[ligne][index_gene]]["reactome"][read[ligne][0]]=Reactome[read[ligne][0]]
+  return Kegg, Reactome
+
 
 def create_nodes_edges(gr,edges,nodes):
   #Crée les noeuds et arêtes d'après le dictionnaire des arêtes annotées
@@ -76,11 +84,11 @@ def create_nodes_edges(gr,edges,nodes):
     locus=edges[key]["locus1"]
     if locus not in nodes.keys():
       nodes[locus]={}
-      nodes[locus]={"node":gr.addNode(), "metabo":[], "reactome":[]}
+      nodes[locus]={"node":gr.addNode(), "metabo":{}, "reactome":{}}
     locus2=edges[key]["locus2"]
     if locus2 not in nodes.keys():
       nodes[locus2]={}
-      nodes[locus2]={"node":gr.addNode(), "metabo":[], "reactome":[]}
+      nodes[locus2]={"node":gr.addNode(), "metabo":{}, "reactome":{}}
     edges[key]["edge"]=gr.addEdge(nodes[locus]["node"],nodes[locus2]["node"])
 
 def ajouter_metrics(nodes, metrics, edges):
@@ -103,10 +111,12 @@ def ajouter_metrics(nodes, metrics, edges):
       metrics["color"][nodes[node]["node"]]=tlp.Color(255,0,0)
     elif exp=="stable":
       metrics["color"][nodes[node]["node"]]=tlp.Color(100,100,100)
-    if len(nodes[node]["reactome"])!=0:
-      metrics["reactome"][nodes[node]["node"]]=nodes[node]["reactome"]
-    if len(nodes[node]["metabo"])!=0:
-      metrics["metabo"][nodes[node]["node"]]=nodes[node]["metabo"]
+    if len(nodes[node]["reactome"].keys())!=0:
+      for reac in nodes[node]["reactome"].keys():
+        metrics["reactome"][nodes[node]["node"]].append(reac)
+    if len(nodes[node]["metabo"].keys())!=0:
+      for meta in nodes[node]["metabo"].keys():
+        metrics["metabo"][nodes[node]["node"]].append(meta)
   for edge in edges.keys():
     if edges[edge]["interraction"]=="gain":
       metrics["color"][edges[edge]["edge"]]=tlp.Color(0,255,0)
@@ -122,9 +132,26 @@ def ajouter_metrics(nodes, metrics, edges):
 def create_subgraph(gr, metrics, nodes):
   list_nodes=[]
   for node in nodes.keys():
-    if (len(nodes[node]["metabo"])!=0 or len(nodes[node]["reactome"])!=0) and (nodes[node]["expression"]=="up" or nodes[node]["expression"]=="down"):
+    if (len(nodes[node]["metabo"].keys())!=0 or len(nodes[node]["reactome"].keys())!=0) and (nodes[node]["expression"]=="up" or nodes[node]["expression"]=="down"):
       list_nodes.append(nodes[node]["node"])
   gr.inducedSubGraph(list_nodes, gr, "test")
+
+def create_subReac(gr, nodes, Keggs, Metabos):
+  for reaction in Keggs.keys():
+    listNodes=[]
+    if len(Keggs[reaction].keys())!=0:
+      for gene in Keggs[reaction].keys():
+        #if nodes[Keggs[reaction][gene]]["expression"] in ["up","down"]:
+        listNodes.append(nodes[gene]["node"])
+      gr.inducedSubGraph(listNodes, gr, reaction)
+  for reaction in Metabos.keys():
+    listNodes=[]
+    if len(Metabos[reaction].keys())!=0:
+      for gene in Metabos[reaction].keys():
+        #if nodes[Metabos[reaction][gene]]["expression"] in ["up","down"]:
+        listNodes.append(nodes[gene]["node"])
+      gr.inducedSubGraph(listNodes, gr, reaction)
+  return True
 
 
 # The updateVisualization(centerViews = True) function can be called
@@ -183,7 +210,7 @@ def main(graph):
   interraction_dict=importData()
   create_nodes_edges(graph, interraction_dict, nodes)
   import_chromosome6_fragments_expressions(nodes)
-  import_metabos(nodes)
+  Keggs, Metabos=import_metabos(nodes)
   ajouter_metrics(nodes, Metrics, interraction_dict)  
   
   params = tlp.getDefaultPluginParameters("FM^3 (OGDF)", graph)
@@ -194,3 +221,4 @@ def main(graph):
   success = graph.applyLayoutAlgorithm('Perfect aspect ratio', viewLayout, paramsPAR)
 
   create_subgraph(graph, Metrics, nodes)
+  create_subReac(graph, nodes, Keggs, Metabos)
