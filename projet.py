@@ -134,23 +134,33 @@ def create_subgraph(gr, metrics, nodes):
   for node in nodes.keys():
     if (len(nodes[node]["metabo"].keys())!=0 or len(nodes[node]["reactome"].keys())!=0) and (nodes[node]["expression"]=="up" or nodes[node]["expression"]=="down"):
       list_nodes.append(nodes[node]["node"])
-  gr.inducedSubGraph(list_nodes, gr, "test")
+  gr.inducedSubGraph(list_nodes, gr, "up'n'down")
 
 def create_subReac(gr, nodes, Keggs, Metabos):
   for reaction in Keggs.keys():
     listNodes=[]
     if len(Keggs[reaction].keys())!=0:
       for gene in Keggs[reaction].keys():
-        #if nodes[Keggs[reaction][gene]]["expression"] in ["up","down"]:
-        listNodes.append(nodes[gene]["node"])
-      gr.inducedSubGraph(listNodes, gr, reaction)
+        if nodes[gene]["expression"] in ["up","down"]:
+          listNodes.append(nodes[gene]["node"])
+          for node in gr.getInOutNodes(nodes[gene]["node"]):
+            listNodes.append(node)
+        else :
+          continue
+      if len(listNodes)!=0:
+        gr.inducedSubGraph(listNodes, gr, reaction)
   for reaction in Metabos.keys():
     listNodes=[]
     if len(Metabos[reaction].keys())!=0:
       for gene in Metabos[reaction].keys():
-        #if nodes[Metabos[reaction][gene]]["expression"] in ["up","down"]:
-        listNodes.append(nodes[gene]["node"])
-      gr.inducedSubGraph(listNodes, gr, reaction)
+        if nodes[gene]["expression"] in ["up","down"]:
+          listNodes.append(nodes[gene]["node"])
+          for node in gr.getInOutNodes(nodes[gene]["node"]):
+            listNodes.append(node)
+        else :
+          continue
+      if len(listNodes)!=0:
+        gr.inducedSubGraph(listNodes, gr, reaction)
   return True
 
 
@@ -217,8 +227,8 @@ def main(graph):
   params["Edge Length Property"] = Metrics["distanceGraph"]
   success = graph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout, params)
   
-  paramsPAR = tlp.getDefaultPluginParameters('Perfect aspect ratio', graph)
-  success = graph.applyLayoutAlgorithm('Perfect aspect ratio', viewLayout, paramsPAR)
+  viewLayout.perfectAspectRatio()
+  updateVisualization(True)
 
   create_subgraph(graph, Metrics, nodes)
   create_subReac(graph, nodes, Keggs, Metabos)
