@@ -134,7 +134,7 @@ def create_subgraph(gr, metrics, nodes):
   for node in nodes.keys():
     if (len(nodes[node]["metabo"].keys())!=0 or len(nodes[node]["reactome"].keys())!=0) and (nodes[node]["expression"]=="up" or nodes[node]["expression"]=="down"):
       list_nodes.append(nodes[node]["node"])
-  gr.inducedSubGraph(list_nodes, gr, "up'n'down")
+  gr.inducedSubGraph(list_nodes, gr, "upDown")
 
 def create_subReac(gr, nodes, Keggs, Metabos):
   for reaction in Keggs.keys():
@@ -222,7 +222,7 @@ def main(graph):
   import_chromosome6_fragments_expressions(nodes)
   Keggs, Metabos=import_metabos(nodes)
   ajouter_metrics(nodes, Metrics, interraction_dict)  
-  
+ 
   params = tlp.getDefaultPluginParameters("FM^3 (OGDF)", graph)
   params["Edge Length Property"] = Metrics["distanceGraph"]
   success = graph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout, params)
