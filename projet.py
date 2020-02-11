@@ -121,6 +121,7 @@ def ajouter_metrics(nodes, metrics, edges):
         list_meta.append(meta)
       metrics["metabo"][nodes[node]["node"]]=list_meta
   for edge in edges.keys():
+    metrics["ID"][edges[edge]["edge"]]=edge
     if edges[edge]["interraction"]=="gain":
       metrics["color"][edges[edge]["edge"]]=tlp.Color(0,255,0)
     if edges[edge]["interraction"]=="loss":
