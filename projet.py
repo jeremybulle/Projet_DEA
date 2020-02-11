@@ -166,6 +166,20 @@ def create_subReac(gr, nodes, Keggs, Metabos):
         gr.inducedSubGraph(listNodes, gr, reaction)
   return True
 
+def creer_express_graph(gr, nodes, Metrics):
+  for noeud in gr.getNodes():
+    List_noeud=[]
+    if Metrics["expression"][noeud] in ["up","down"] and (len(Metrics["reactome"][noeud])!=0 or len(Metrics["metabo"][noeud])!=0):
+      explorerUpDown(gr, nodes, noeud, List_noeud, Metrics)
+    if len(List_noeud)>1:
+      gr.inducedSubGraph(List_noeud, gr, "noeud")
+
+def explorerUpDown(gr, nodes, noeud, List_noeud, Metrics):
+  List_noeud.append(noeud)
+  for voisin in gr.getInOutNodes(noeud):
+    if Metrics["expression"][voisin] in ["up","down"] and voisin not in List_noeud and (len(Metrics["reactome"][voisin])!=0 or len(Metrics["metabo"][voisin])!=0):
+      explorerUpDown(gr, nodes, voisin, List_noeud, Metrics)
+  
 
 # The updateVisualization(centerViews = True) function can be called
 # during script execution to update the opened views
@@ -234,4 +248,6 @@ def main(graph):
   updateVisualization(True)
 
   create_subgraph(graph, Metrics, nodes)
-  create_subReac(graph, nodes, Keggs, Metabos)
+  #create_subReac(graph, nodes, Keggs, Metabos)
+
+  creer_express_graph(graph, nodes, Metrics)
