@@ -139,7 +139,7 @@ def create_subgraph(gr, metrics, nodes):
       list_nodes.append(nodes[node]["node"])
   gr.inducedSubGraph(list_nodes, gr, "upDown")
 
-def create_subReac(gr, nodes, Keggs, Metabos):
+def create_subReac(gr, nodes, Keggs, Metabos, layout):
   for reaction in Keggs.keys():
     listNodes=[]
     if len(Keggs[reaction].keys())!=0:
@@ -151,7 +151,8 @@ def create_subReac(gr, nodes, Keggs, Metabos):
         else :
           continue
       if len(listNodes)!=0:
-        gr.inducedSubGraph(listNodes, gr, reaction)
+        subgraph=gr.inducedSubGraph(listNodes, gr, reaction)
+        subgraph.applyLayoutAlgorithm("FM^3 (OGDF)", layout)
   for reaction in Metabos.keys():
     listNodes=[]
     if len(Metabos[reaction].keys())!=0:
@@ -163,23 +164,61 @@ def create_subReac(gr, nodes, Keggs, Metabos):
         else :
           continue
       if len(listNodes)!=0:
-        gr.inducedSubGraph(listNodes, gr, reaction)
+        subgraph=gr.inducedSubGraph(listNodes, gr, reaction)
+        subgraph.applyLayoutAlgorithm("FM^3 (OGDF)", layout)
+
   return True
 
 def creer_express_graph(gr, nodes, Metrics):
+  liste_noeud=[]
+  for noeud in gr.getNodes():
+    liste_noeud.append(noeud)
+  clone=gr.addCloneSubGraph("clone", False, True)
+  noeuds_vu=[]
   for noeud in gr.getNodes():
     List_noeud=[]
-    if Metrics["expression"][noeud] in ["up","down"] and (len(Metrics["reactome"][noeud])!=0 or len(Metrics["metabo"][noeud])!=0):
-      explorerUpDown(gr, nodes, noeud, List_noeud, Metrics)
+    if Metrics["expression"][noeud] in ["up","down"] and (len(Metrics["reactome"][noeud])!=0 or len(Metrics["metabo"][noeud])!=0) and (noeud not in noeuds_vu):
+      noeuds_vu.append(noeud)
+      explorerUpDown(gr, nodes, noeud, List_noeud, Metrics, noeuds_vu)
     if len(List_noeud)>1:
-      gr.inducedSubGraph(List_noeud, gr, "noeud")
+      clone.inducedSubGraph(List_noeud, clone, Metrics["ID"][noeud])
+  return clone
 
-def explorerUpDown(gr, nodes, noeud, List_noeud, Metrics):
+def explorerUpDown(gr, nodes, noeud, List_noeud, Metrics, noeuds_vu):
   List_noeud.append(noeud)
   for voisin in gr.getInOutNodes(noeud):
+    noeuds_vu.append(voisin)
     if Metrics["expression"][voisin] in ["up","down"] and voisin not in List_noeud and (len(Metrics["reactome"][voisin])!=0 or len(Metrics["metabo"][voisin])!=0):
-      explorerUpDown(gr, nodes, voisin, List_noeud, Metrics)
+      explorerUpDown(gr, nodes, voisin, List_noeud, Metrics, noeuds_vu)
   
+def etiquettes(gr, nodes, edges, Metrics):
+  for subgraph in gr.subGraphs():
+    for noeud in subgraph.getNodes():
+      if len(Metrics["reactome"][noeud])!=0:
+        for reac in Metrics["reactome"][noeud] :
+          nodes[reac]={"node":subgraph.addNode()}
+          Metrics["ID"][nodes[reac]["node"]]=reac
+          Metrics["label"][nodes[reac]["node"]]=reac
+          edges[reac+"_"+Metrics["ID"][noeud]]={}
+          edges[reac+"_"+Metrics["ID"][noeud]]["edge"]=subgraph.addEdge(nodes[reac]["node"],noeud)
+      if len(Metrics["metabo"][noeud])!=0:
+        for reac in Metrics["metabo"][noeud] :
+          nodes[reac]={"node":subgraph.addNode()}
+          Metrics["ID"][nodes[reac]["node"]]=reac
+          Metrics["label"][nodes[reac]["node"]]=reac
+          edges[reac+"_"+Metrics["ID"][noeud]]={}
+          edges[reac+"_"+Metrics["ID"][noeud]]["edge"]=subgraph.addEdge(nodes[reac]["node"],noeud)
+    viewLayout=subgraph.getLayoutProperty("viewLayout")
+    subgraph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout)
+  
+def afficher_reseau(gr, Metrics, nodes, Keggs, Metabos, viewLayout):
+  create_subgraph(gr, Metrics, nodes)
+  create_subReac(gr, nodes, Keggs, Metabos, viewLayout)
+
+def afficher_interactions_reseaux(gr, nodes, Metrics, edges):
+  clone=creer_express_graph(gr, nodes, Metrics)
+  etiquettes(clone, nodes, edges, Metrics)
+
 
 # The updateVisualization(centerViews = True) function can be called
 # during script execution to update the opened views
@@ -246,8 +285,9 @@ def main(graph):
   
   viewLayout.perfectAspectRatio()
   updateVisualization(True)
+  original=graph.addCloneSubGraph("original", False, False)
+  sub = graph.addCloneSubGraph("sub", False, False)
+  
+  #afficher_reseau(sub, Metrics, nodes, Keggs, Metabos, viewLayout)
 
-  create_subgraph(graph, Metrics, nodes)
-  #create_subReac(graph, nodes, Keggs, Metabos)
-
-  creer_express_graph(graph, nodes, Metrics)
+  #afficher_interactions_reseaux(sub, nodes, Metrics, interraction_dict)
