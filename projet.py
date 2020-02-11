@@ -134,6 +134,10 @@ def ajouter_metriques(noeuds, metriques, aretes):
   return 0
 
 def creer_sousGraph(gr, metriques, noeuds):
+  #Creer un sous graphe de gr contenant uniquement les gènes dont l'expression est impactée par l'activation d'un lymphocyte T.
+  #gr = graphe sur lequel appliquer les opérations
+  #metriques = liste des différentes metriques
+  #noeuds = dictionnaire des noeuds
   list_noeuds=[]
   for noeud in noeuds.keys():
     if (len(noeuds[noeud]["metabo"].keys())!=0 or len(noeuds[noeud]["reactome"].keys())!=0) and (noeuds[noeud]["expression"]=="up" or noeuds[noeud]["expression"]=="down"):
@@ -141,6 +145,12 @@ def creer_sousGraph(gr, metriques, noeuds):
   gr.inducedSubGraph(list_noeuds, gr, "upDown")
 
 def creer_subReac(gr, noeuds, Keggs, Metabos, layout):
+  #Creer des sous graphes pour chaque réaction dont au moins un gène qui le compose est impactée par l'activation d'un lymphocyte T
+  #gr = graphe sur lequel appliquer les opérations
+  #noeuds = dictionnaire des noeuds
+  #Keggs = dictionnaire structurant les données du fichier Kegg.
+  #Metabos = dictionnaire structurant les données du fichier Reactome
+  #layout = Propriété modifiée pour la visualisation
   for reaction in Keggs.keys():
     listNoeuds=[]
     if len(Keggs[reaction].keys())!=0:
@@ -170,6 +180,11 @@ def creer_subReac(gr, noeuds, Keggs, Metabos, layout):
   return True
 
 def creer_express_graph(gr, noeuds, Metriques):
+  #Crée un graph pour chaque gène dont l'expression est impactée par l'activation d'un lymphocyte T et tous les gènes en intéractions entre eux qui sont eux aussi impactées par l'activation
+  #gr = graphe sur lequel appliquer les opérations
+  #noeuds = dictionnaire des noeuds
+  #Metriques = liste des différentes metriques
+  #return clone = renvoie un sous graphe pour ne pas modifier le graphe d'origine (ne fonctionne pas)
   liste_noeud=[]
   for noeud in gr.getNodes():
     liste_noeud.append(noeud)
@@ -185,6 +200,12 @@ def creer_express_graph(gr, noeuds, Metriques):
   return clone
 
 def explorerUpDown(gr, noeuds, noeud, List_noeud, Metriques, noeuds_vu):
+  #Parcourt tous les voisins d'un noeud si celui-ci est impacté par l'activation d'un lymphocyte T et si il est impliqué dans une voie métabolique
+  #gr = graphe sur lequel appliquer les opérations
+  #noeuds = dictionnaire des noeuds
+  #List_noeud = accumulateur de l'exploration
+  #Metriques = liste des différentes metriques
+  #noeuds_vu = liste de noeuds déjà parcouru par l'algorythme afin d'éviter de dupliquer les graphes  
   List_noeud.append(noeud)
   for voisin in gr.getInOutNodes(noeud):
     noeuds_vu.append(voisin)
@@ -192,6 +213,11 @@ def explorerUpDown(gr, noeuds, noeud, List_noeud, Metriques, noeuds_vu):
       explorerUpDown(gr, noeuds, voisin, List_noeud, Metriques, noeuds_vu)
   
 def etiquettes(gr, noeuds, aretes, Metriques):
+  #Ajoute des étiquettes aux gènes correspondant aux voies métaboliques dans lesquels ils sont impliqués
+  #gr = graphe sur lequel appliquer les opérations
+  #noeuds = dictionnaire des noeuds
+  #aretes = dictionnaire des arêtes
+  #Metriques = liste des différentes metriques
   for sousGraph in gr.subGraphs():
     for noeud in sousGraph.getNodes():
       if len(Metriques["reactome"][noeud])!=0:
@@ -212,10 +238,24 @@ def etiquettes(gr, noeuds, aretes, Metriques):
     sousGraph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout)
   
 def afficher_reseau(gr, Metriques, noeuds, Keggs, Metabos, viewLayout):
+  #Afin de gérer les différentes modifications des graphes, afficher_reseau et afficher_interactions_reseaux ne peuvent être lancées ensembles et doivent être commenté afin de visualiser différents aspects du graph
+  #Afficher réseau permet d'afficher le graphe des gènes d'intérêt
+  #gr = graphe sur lequel appliquer les opérations
+  #Metriques = liste des différentes metriques
+  #noeuds = dictionnaire des noeuds
+  #Keggs = dictionnaire structurant les données du fichier Kegg.
+  #Metabos = dictionnaire structurant les données du fichier Reactome
+  #viewLayout = Propriété modifiée pour la visualisation
   creer_sousGraph(gr, Metriques, noeuds)
   creer_subReac(gr, noeuds, Keggs, Metabos, viewLayout)
 
 def afficher_interactions_reseaux(gr, noeuds, Metriques, aretes):
+  #Afin de gérer les différentes modifications des graphes, afficher_reseau et afficher_interactions_reseaux ne peuvent être lancées ensembles et doivent être commenté afin de visualiser différents aspects du graph
+  #Afficher réseau permet d'afficher le graphe des gènes d'intérêt
+  #gr = graphe sur lequel appliquer les opérations
+  #Metriques = liste des différentes metriques
+  #noeuds = dictionnaire des noeuds  
+  #aretes = dictionnaire des arêtes
   clone=creer_express_graph(gr, noeuds, Metriques)
   etiquettes(clone, noeuds, aretes, Metriques)
 
@@ -234,29 +274,7 @@ def afficher_interactions_reseaux(gr, noeuds, Metriques, aretes):
 # to run the script on the current graph
 
 def main(graph):
-  '''
-  viewBorderColor = graph.getColorProperty("viewBorderColor")
-  viewBorderWidth = graph.getDoubleProperty("viewBorderWidth")
-  viewFont = graph.getStringProperty("viewFont")
-  viewFontSize = graph.getIntegerProperty("viewFontSize")
-  viewIcon = graph.getStringProperty("viewIcon")
-  viewLabelBorderColor = graph.getColorProperty("viewLabelBorderColor")
-  viewLabelBorderWidth = graph.getDoubleProperty("viewLabelBorderWidth")
-  viewLabelColor = graph.getColorProperty("viewLabelColor")
-  viewLabelPosition = graph.getIntegerProperty("viewLabelPosition")
-  viewMetric = graph.getDoubleProperty("viewMetric")
-  viewRotation = graph.getDoubleProperty("viewRotation")
-  viewSelection = graph.getBooleanProperty("viewSelection")
-  viewShape = graph.getIntegerProperty("viewShape")
-  viewSize = graph.getSizeProperty("viewSize")
-  viewSrcAnchorShape = graph.getIntegerProperty("viewSrcAnchorShape")
-  viewSrcAnchorSize = graph.getSizeProperty("viewSrcAnchorSize")
-  viewTexture = graph.getStringProperty("viewTexture")
-  viewTgtAnchorShape = graph.getIntegerProperty("viewTgtAnchorShape")
-  viewTgtAnchorSize = graph.getSizeProperty("viewTgtAnchorSize")
-  '''
   viewLayout = graph.getLayoutProperty("viewLayout")
-  
   Metriques={}
   Metriques["color"] = graph.getColorProperty("viewColor")
   Metriques["label"] = graph.getStringProperty("viewLabel")
@@ -270,8 +288,6 @@ def main(graph):
 
   noeuds = {}
   interract_dict = {}
-  
-  
   
   interraction_dict=importDonnees()
   creer_noeuds_aretes(graph, interraction_dict, noeuds)
