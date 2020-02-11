@@ -102,7 +102,7 @@ def ajouter_metrics(nodes, metrics, edges):
     exp=nodes[node]["expression"]
     metrics["expression"][nodes[node]["node"]]=exp
     if exp=="intergenic":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(200,200,200)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(150,150,150)
     elif exp=="NA":
       metrics["color"][nodes[node]["node"]]=tlp.Color(0,0,0)
     elif exp=="up":
@@ -110,7 +110,7 @@ def ajouter_metrics(nodes, metrics, edges):
     elif exp=="down":
       metrics["color"][nodes[node]["node"]]=tlp.Color(255,0,0)
     elif exp=="stable":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(100,100,100)
+      metrics["color"][nodes[node]["node"]]=tlp.Color(0,100,255)
     if len(nodes[node]["reactome"].keys())!=0:
       for reac in nodes[node]["reactome"].keys():
         metrics["reactome"][nodes[node]["node"]].append(reac)
