@@ -17,160 +17,159 @@ from tulip import *
 from collections import deque
 import csv
 
-def ouvrir_fichier(fichier, header=True):
+def ouvrir_fichier(fichier, enTete=True):
   #Ouvre un fichier .tsv et le renvoie sous forme d'une liste
   #fichier = nom du fichier à ouvrir
-  #header = True si le fichier contient un header
-  #header = False si le fichier ne contient pas de header
+  #enTete = True si le fichier contient un en-tête
+  #enTete = False si le fichier ne contient pas de en-tête
   #return données sous forme de liste.
   wd = '/net/stockage/TulipDEA/'
   with open (wd+fichier, newline ='') as csvfile:
-    data = list(csv.reader(csvfile, delimiter ='\t'))
-  if (header):
-    data.pop(0)
-  return data
+    donnees = list(csv.reader(csvfile, delimiter ='\t'))
+  if (enTete):
+    donnees.pop(0)
+  return donnees
 
-def importData():
+def importDonnees():
   #importe et structure les données du fichier interactions_chromosome6.csv dans un dictionnaire d'arêtes
   #chaque clé correspond à une arête avec comme valeurs les noms des deux gènes en relation, le type et la distance d'interraction qui lie ces deux gènes
   #renvoit le dictionnaire des arêtes annotées
   interraction_dict ={}
-  data = ouvrir_fichier('interactions_chromosome6.csv')
-  lendata = len(data)
-  for i in range(lendata):
-    nom_interraction = data[i][1] + "_" + data[i][2]
-    interraction_dict[nom_interraction] = {"locus1" : data[i][1], "locus2" : data[i][2], "interraction" : data[i][3], "distance": data[i][4]}
+  donnees = ouvrir_fichier('interactions_chromosome6.csv')
+  longueur_donnees = len(donnees)
+  for i in range(longueur_donnees):
+    nom_interraction = donnees[i][1] + "_" + donnees[i][2]
+    interraction_dict[nom_interraction] = {"locus1" : donnees[i][1], "locus2" : donnees[i][2], "interraction" : donnees[i][3], "distance": donnees[i][4]}
     i +=1
   return interraction_dict
 
-def import_chromosome6_fragments_expressions(nodes):
+def import_chromosome6_fragments_expressions(noeuds):
   #ajoute les informations des gènes préimplémentés contenues dans le fichier chromosome6_fragments_expressions.csv
-  #nodes = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
-  read=ouvrir_fichier('chromosome6_fragments_expressions.csv')
-  lenread=len(read)
-  for ligne in range(lenread):
-    if read[ligne][1] in nodes.keys():
-      nodes[read[ligne][1]]["expression"]=read[ligne][2]
+  #noeuds = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
+  lecture=ouvrir_fichier('chromosome6_fragments_expressions.csv')
+  longueur_lecture=len(lecture)
+  for ligne in range(longueur_lecture):
+    if lecture[ligne][1] in noeuds.keys():
+      noeuds[lecture[ligne][1]]["expression"]=lecture[ligne][2]
 
-def import_metabos(nodes):
+def import_metabos(noeuds):
   #ajoute les informations des gènes préimplémentés contenues dans les fichiers KEGG.symbols.csv et REACTOME.symbols.csv
-  #nodes = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
+  #noeuds = dictionnaire d'accès aux noeuds du graphe et à leurs annotations
   Kegg={}
-  read=ouvrir_fichier('KEGG.symbols.csv', False)
-  for ligne in range(len(read)):
-    Kegg[read[ligne][0]]={}
-    for index_gene in range(2,len(read[ligne])):
-      if read[ligne][index_gene] in nodes.keys():
-        Kegg[read[ligne][0]][read[ligne][index_gene]]=nodes[read[ligne][index_gene]]
-        nodes[read[ligne][index_gene]]["metabo"][read[ligne][0]]=Kegg[read[ligne][0]]
+  lecture=ouvrir_fichier('KEGG.symbols.csv', False)
+  for ligne in range(len(lecture)):
+    Kegg[lecture[ligne][0]]={}
+    for index_gene in range(2,len(lecture[ligne])):
+      if lecture[ligne][index_gene] in noeuds.keys():
+        Kegg[lecture[ligne][0]][lecture[ligne][index_gene]]=noeuds[lecture[ligne][index_gene]]
+        noeuds[lecture[ligne][index_gene]]["metabo"][lecture[ligne][0]]=Kegg[lecture[ligne][0]]
   Reactome={}
-  read=ouvrir_fichier('REACTOME.symbols.csv', False)
-  for ligne in range(len(read)):
-    Reactome[read[ligne][0]]={}
-    for index_gene in range(2,len(read[ligne])):
-      if read[ligne][index_gene] in nodes.keys():
-        Reactome[read[ligne][0]][read[ligne][index_gene]]=nodes[read[ligne][index_gene]]
-        nodes[read[ligne][index_gene]]["reactome"][read[ligne][0]]=Reactome[read[ligne][0]]
+  lecture=ouvrir_fichier('REACTOME.symbols.csv', False)
+  for ligne in range(len(lecture)):
+    Reactome[lecture[ligne][0]]={}
+    for index_gene in range(2,len(lecture[ligne])):
+      if lecture[ligne][index_gene] in noeuds.keys():
+        Reactome[lecture[ligne][0]][lecture[ligne][index_gene]]=noeuds[lecture[ligne][index_gene]]
+        noeuds[lecture[ligne][index_gene]]["reactome"][lecture[ligne][0]]=Reactome[lecture[ligne][0]]
   return Kegg, Reactome
 
 
-def create_nodes_edges(gr,edges,nodes):
+def creer_noeuds_aretes(gr,aretes,noeuds):
   #Crée les noeuds et arêtes d'après le dictionnaire des arêtes annotées
   #et les rend accessible respectivement par le biais des disctionnaires des noeuds et des arêtes
   #gr = graphe sur lequel appliquer les opérations
-  #edges = dictionnaire des arêtes
-  #nodes = dictionnaire des noeuds
-  for key in edges.keys():
-    locus=edges[key]["locus1"]
-    if locus not in nodes.keys():
-      nodes[locus]={}
-      nodes[locus]={"node":gr.addNode(), "metabo":{}, "reactome":{}}
-    locus2=edges[key]["locus2"]
-    if locus2 not in nodes.keys():
-      nodes[locus2]={}
-      nodes[locus2]={"node":gr.addNode(), "metabo":{}, "reactome":{}}
-    edges[key]["edge"]=gr.addEdge(nodes[locus]["node"],nodes[locus2]["node"])
+  #aretes = dictionnaire des arêtes
+  #noeuds = dictionnaire des noeuds
+  for cle in aretes.keys():
+    locus=aretes[cle]["locus1"]
+    if locus not in noeuds.keys():
+      noeuds[locus]={}
+      noeuds[locus]={"noeud":gr.addNode(), "metabo":{}, "reactome":{}}
+    locus2=aretes[cle]["locus2"]
+    if locus2 not in noeuds.keys():
+      noeuds[locus2]={}
+      noeuds[locus2]={"noeud":gr.addNode(), "metabo":{}, "reactome":{}}
+    aretes[cle]["arete"]=gr.addEdge(noeuds[locus]["noeud"],noeuds[locus2]["noeud"])
 
-def ajouter_metrics(nodes, metrics, edges):
+def ajouter_metriques(noeuds, metriques, aretes):
   #ajoute toutes les annotations des différents fichiers sur les noeuds/arêtes
-  #nodes = dictionnaire des noeuds
-  #edges = dictionnaire des arêtes
-  #metrics = liste des différentes metrics
-  for node in nodes.keys():
+  #noeuds = dictionnaire des noeuds
+  #aretes = dictionnaire des arêtes
+  #metriques = liste des différentes metriques
+  for noeud in noeuds.keys():
     list_reac=[]
     list_meta=[]
-    metrics["ID"][nodes[node]["node"]]=node
-    exp=nodes[node]["expression"]
-    metrics["expression"][nodes[node]["node"]]=exp
+    metriques["ID"][noeuds[noeud]["noeud"]]=noeud
+    exp=noeuds[noeud]["expression"]
+    metriques["expression"][noeuds[noeud]["noeud"]]=exp
     if exp=="intergenic":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(150,150,150)
+      metriques["color"][noeuds[noeud]["noeud"]]=tlp.Color(150,150,150)
     elif exp=="NA":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(0,0,0)
+      metriques["color"][noeuds[noeud]["noeud"]]=tlp.Color(0,0,0)
     elif exp=="up":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(0,255,0)
+      metriques["color"][noeuds[noeud]["noeud"]]=tlp.Color(0,255,0)
     elif exp=="down":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(255,0,0)
+      metriques["color"][noeuds[noeud]["noeud"]]=tlp.Color(255,0,0)
     elif exp=="stable":
-      metrics["color"][nodes[node]["node"]]=tlp.Color(0,100,255)
-    if len(nodes[node]["reactome"].keys())!=0:
-      for reac in nodes[node]["reactome"].keys():
+      metriques["color"][noeuds[noeud]["noeud"]]=tlp.Color(0,100,255)
+    if len(noeuds[noeud]["reactome"].keys())!=0:
+      for reac in noeuds[noeud]["reactome"].keys():
         list_reac.append(reac)
-      metrics["reactome"][nodes[node]["node"]]=list_reac
-    if len(nodes[node]["metabo"].keys())!=0:
-      for meta in nodes[node]["metabo"].keys():
+      metriques["reactome"][noeuds[noeud]["noeud"]]=list_reac
+    if len(noeuds[noeud]["metabo"].keys())!=0:
+      for meta in noeuds[noeud]["metabo"].keys():
         list_meta.append(meta)
-      metrics["metabo"][nodes[node]["node"]]=list_meta
-  for edge in edges.keys():
-    metrics["ID"][edges[edge]["edge"]]=edge
-    if edges[edge]["interraction"]=="gain":
-      metrics["color"][edges[edge]["edge"]]=tlp.Color(0,255,0)
-    if edges[edge]["interraction"]=="loss":
-      metrics["color"][edges[edge]["edge"]]=tlp.Color(255,0,0)
-    if edges[edge]["interraction"]=="stable":
-      metrics["color"][edges[edge]["edge"]]=tlp.Color(200,200,200)
-    metrics["distance"][edges[edge]["edge"]]=int(edges[edge]["distance"])
-    metrics["distanceGraph"][edges[edge]["edge"]]=int(edges[edge]["distance"])/100000
-    metrics["interraction"][edges[edge]["edge"]]=edges[edge]["interraction"]
+      metriques["metabo"][noeuds[noeud]["noeud"]]=list_meta
+  for arete in aretes.keys():
+    metriques["ID"][aretes[arete]["arete"]]=arete
+    if aretes[arete]["interraction"]=="gain":
+      metriques["color"][aretes[arete]["arete"]]=tlp.Color(0,255,0)
+    if aretes[arete]["interraction"]=="loss":
+      metriques["color"][aretes[arete]["arete"]]=tlp.Color(255,0,0)
+    if aretes[arete]["interraction"]=="stable":
+      metriques["color"][aretes[arete]["arete"]]=tlp.Color(200,200,200)
+    metriques["distance"][aretes[arete]["arete"]]=int(aretes[arete]["distance"])
+    metriques["distanceGraph"][aretes[arete]["arete"]]=int(aretes[arete]["distance"])/100000
+    metriques["interraction"][aretes[arete]["arete"]]=aretes[arete]["interraction"]
   return 0
 
-def create_subgraph(gr, metrics, nodes):
-  list_nodes=[]
-  for node in nodes.keys():
-    if (len(nodes[node]["metabo"].keys())!=0 or len(nodes[node]["reactome"].keys())!=0) and (nodes[node]["expression"]=="up" or nodes[node]["expression"]=="down"):
-      list_nodes.append(nodes[node]["node"])
-  gr.inducedSubGraph(list_nodes, gr, "upDown")
+def creer_sousGraph(gr, metriques, noeuds):
+  list_noeuds=[]
+  for noeud in noeuds.keys():
+    if (len(noeuds[noeud]["metabo"].keys())!=0 or len(noeuds[noeud]["reactome"].keys())!=0) and (noeuds[noeud]["expression"]=="up" or noeuds[noeud]["expression"]=="down"):
+      list_noeuds.append(noeuds[noeud]["noeud"])
+  gr.inducedSubGraph(list_noeuds, gr, "upDown")
 
-def create_subReac(gr, nodes, Keggs, Metabos, layout):
+def creer_subReac(gr, noeuds, Keggs, Metabos, layout):
   for reaction in Keggs.keys():
-    listNodes=[]
+    listNoeuds=[]
     if len(Keggs[reaction].keys())!=0:
       for gene in Keggs[reaction].keys():
-        if nodes[gene]["expression"] in ["up","down"]:
-          listNodes.append(nodes[gene]["node"])
-          for node in gr.getInOutNodes(nodes[gene]["node"]):
-            listNodes.append(node)
+        if noeuds[gene]["expression"] in ["up","down"]:
+          listNoeuds.append(noeuds[gene]["noeud"])
+          for noeud in gr.getInOutNodes(noeuds[gene]["noeud"]):
+            listNoeuds.append(noeud)
         else :
           continue
-      if len(listNodes)!=0:
-        subgraph=gr.inducedSubGraph(listNodes, gr, reaction)
-        subgraph.applyLayoutAlgorithm("FM^3 (OGDF)", layout)
+      if len(listNoeuds)!=0:
+        sousGraph=gr.inducedSubGraph(listNoeuds, gr, reaction)
+        sousGraph.applyLayoutAlgorithm("FM^3 (OGDF)", layout)
   for reaction in Metabos.keys():
-    listNodes=[]
+    listNoeuds=[]
     if len(Metabos[reaction].keys())!=0:
       for gene in Metabos[reaction].keys():
-        if nodes[gene]["expression"] in ["up","down"]:
-          listNodes.append(nodes[gene]["node"])
-          for node in gr.getInOutNodes(nodes[gene]["node"]):
-            listNodes.append(node)
+        if noeuds[gene]["expression"] in ["up","down"]:
+          listNoeuds.append(noeuds[gene]["noeud"])
+          for noeud in gr.getInOutNodes(noeuds[gene]["noeud"]):
+            listNoeuds.append(noeud)
         else :
           continue
-      if len(listNodes)!=0:
-        subgraph=gr.inducedSubGraph(listNodes, gr, reaction)
-        subgraph.applyLayoutAlgorithm("FM^3 (OGDF)", layout)
-
+      if len(listNoeuds)!=0:
+        sousGraph=gr.inducedSubGraph(listNoeuds, gr, reaction)
+        sousGraph.applyLayoutAlgorithm("FM^3 (OGDF)", layout)
   return True
 
-def creer_express_graph(gr, nodes, Metrics):
+def creer_express_graph(gr, noeuds, Metriques):
   liste_noeud=[]
   for noeud in gr.getNodes():
     liste_noeud.append(noeud)
@@ -178,47 +177,47 @@ def creer_express_graph(gr, nodes, Metrics):
   noeuds_vu=[]
   for noeud in gr.getNodes():
     List_noeud=[]
-    if Metrics["expression"][noeud] in ["up","down"] and (len(Metrics["reactome"][noeud])!=0 or len(Metrics["metabo"][noeud])!=0) and (noeud not in noeuds_vu):
+    if Metriques["expression"][noeud] in ["up","down"] and (len(Metriques["reactome"][noeud])!=0 or len(Metriques["metabo"][noeud])!=0) and (noeud not in noeuds_vu):
       noeuds_vu.append(noeud)
-      explorerUpDown(gr, nodes, noeud, List_noeud, Metrics, noeuds_vu)
+      explorerUpDown(gr, noeuds, noeud, List_noeud, Metriques, noeuds_vu)
     if len(List_noeud)>1:
-      clone.inducedSubGraph(List_noeud, clone, Metrics["ID"][noeud])
+      clone.inducedSubGraph(List_noeud, clone, Metriques["ID"][noeud])
   return clone
 
-def explorerUpDown(gr, nodes, noeud, List_noeud, Metrics, noeuds_vu):
+def explorerUpDown(gr, noeuds, noeud, List_noeud, Metriques, noeuds_vu):
   List_noeud.append(noeud)
   for voisin in gr.getInOutNodes(noeud):
     noeuds_vu.append(voisin)
-    if Metrics["expression"][voisin] in ["up","down"] and voisin not in List_noeud and (len(Metrics["reactome"][voisin])!=0 or len(Metrics["metabo"][voisin])!=0):
-      explorerUpDown(gr, nodes, voisin, List_noeud, Metrics, noeuds_vu)
+    if Metriques["expression"][voisin] in ["up","down"] and voisin not in List_noeud and (len(Metriques["reactome"][voisin])!=0 or len(Metriques["metabo"][voisin])!=0):
+      explorerUpDown(gr, noeuds, voisin, List_noeud, Metriques, noeuds_vu)
   
-def etiquettes(gr, nodes, edges, Metrics):
-  for subgraph in gr.subGraphs():
-    for noeud in subgraph.getNodes():
-      if len(Metrics["reactome"][noeud])!=0:
-        for reac in Metrics["reactome"][noeud] :
-          nodes[reac]={"node":subgraph.addNode()}
-          Metrics["ID"][nodes[reac]["node"]]=reac
-          Metrics["label"][nodes[reac]["node"]]=reac
-          edges[reac+"_"+Metrics["ID"][noeud]]={}
-          edges[reac+"_"+Metrics["ID"][noeud]]["edge"]=subgraph.addEdge(nodes[reac]["node"],noeud)
-      if len(Metrics["metabo"][noeud])!=0:
-        for reac in Metrics["metabo"][noeud] :
-          nodes[reac]={"node":subgraph.addNode()}
-          Metrics["ID"][nodes[reac]["node"]]=reac
-          Metrics["label"][nodes[reac]["node"]]=reac
-          edges[reac+"_"+Metrics["ID"][noeud]]={}
-          edges[reac+"_"+Metrics["ID"][noeud]]["edge"]=subgraph.addEdge(nodes[reac]["node"],noeud)
-    viewLayout=subgraph.getLayoutProperty("viewLayout")
-    subgraph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout)
+def etiquettes(gr, noeuds, aretes, Metriques):
+  for sousGraph in gr.subGraphs():
+    for noeud in sousGraph.getNodes():
+      if len(Metriques["reactome"][noeud])!=0:
+        for reac in Metriques["reactome"][noeud] :
+          noeuds[reac]={"noeud":sousGraph.addNode()}
+          Metriques["ID"][noeuds[reac]["noeud"]]=reac
+          Metriques["label"][noeuds[reac]["noeud"]]=reac
+          aretes[reac+"_"+Metriques["ID"][noeud]]={}
+          aretes[reac+"_"+Metriques["ID"][noeud]]["arete"]=sousGraph.addEdge(noeuds[reac]["noeud"],noeud)
+      if len(Metriques["metabo"][noeud])!=0:
+        for reac in Metriques["metabo"][noeud] :
+          noeuds[reac]={"noeud":sousGraph.addNode()}
+          Metriques["ID"][noeuds[reac]["noeud"]]=reac
+          Metriques["label"][noeuds[reac]["noeud"]]=reac
+          aretes[reac+"_"+Metriques["ID"][noeud]]={}
+          aretes[reac+"_"+Metriques["ID"][noeud]]["arete"]=sousGraph.addEdge(noeuds[reac]["noeud"],noeud)
+    viewLayout=sousGraph.getLayoutProperty("viewLayout")
+    sousGraph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout)
   
-def afficher_reseau(gr, Metrics, nodes, Keggs, Metabos, viewLayout):
-  create_subgraph(gr, Metrics, nodes)
-  create_subReac(gr, nodes, Keggs, Metabos, viewLayout)
+def afficher_reseau(gr, Metriques, noeuds, Keggs, Metabos, viewLayout):
+  creer_sousGraph(gr, Metriques, noeuds)
+  creer_subReac(gr, noeuds, Keggs, Metabos, viewLayout)
 
-def afficher_interactions_reseaux(gr, nodes, Metrics, edges):
-  clone=creer_express_graph(gr, nodes, Metrics)
-  etiquettes(clone, nodes, edges, Metrics)
+def afficher_interactions_reseaux(gr, noeuds, Metriques, aretes):
+  clone=creer_express_graph(gr, noeuds, Metriques)
+  etiquettes(clone, noeuds, aretes, Metriques)
 
 
 # The updateVisualization(centerViews = True) function can be called
@@ -258,30 +257,30 @@ def main(graph):
   '''
   viewLayout = graph.getLayoutProperty("viewLayout")
   
-  Metrics={}
-  Metrics["color"] = graph.getColorProperty("viewColor")
-  Metrics["label"] = graph.getStringProperty("viewLabel")
-  Metrics["ID"]=graph.getStringProperty("ID")
-  Metrics["expression"]=graph.getStringProperty("expression")
-  Metrics["distance"]=graph.getDoubleProperty("distance")
-  Metrics["distanceGraph"]=graph.getDoubleProperty("distanceGraph")
-  Metrics["interraction"]=graph.getStringProperty("interaction")
-  Metrics["reactome"]=graph.getStringVectorProperty("reactome")
-  Metrics["metabo"]=graph.getStringVectorProperty("metabo")
+  Metriques={}
+  Metriques["color"] = graph.getColorProperty("viewColor")
+  Metriques["label"] = graph.getStringProperty("viewLabel")
+  Metriques["ID"]=graph.getStringProperty("ID")
+  Metriques["expression"]=graph.getStringProperty("expression")
+  Metriques["distance"]=graph.getDoubleProperty("distance")
+  Metriques["distanceGraph"]=graph.getDoubleProperty("distanceGraph")
+  Metriques["interraction"]=graph.getStringProperty("interaction")
+  Metriques["reactome"]=graph.getStringVectorProperty("reactome")
+  Metriques["metabo"]=graph.getStringVectorProperty("metabo")
 
-  nodes = {}
+  noeuds = {}
   interract_dict = {}
   
   
   
-  interraction_dict=importData()
-  create_nodes_edges(graph, interraction_dict, nodes)
-  import_chromosome6_fragments_expressions(nodes)
-  Keggs, Metabos=import_metabos(nodes)
-  ajouter_metrics(nodes, Metrics, interraction_dict)  
+  interraction_dict=importDonnees()
+  creer_noeuds_aretes(graph, interraction_dict, noeuds)
+  import_chromosome6_fragments_expressions(noeuds)
+  Keggs, Metabos=import_metabos(noeuds)
+  ajouter_metriques(noeuds, Metriques, interraction_dict)  
  
   params = tlp.getDefaultPluginParameters("FM^3 (OGDF)", graph)
-  params["Edge Length Property"] = Metrics["distanceGraph"]
+  params["Edge Length Property"] = Metriques["distanceGraph"]
   success = graph.applyLayoutAlgorithm("FM^3 (OGDF)", viewLayout, params)
   
   viewLayout.perfectAspectRatio()
@@ -289,6 +288,6 @@ def main(graph):
   original=graph.addCloneSubGraph("original", False, False)
   sub = graph.addCloneSubGraph("sub", False, False)
   
-  #afficher_reseau(sub, Metrics, nodes, Keggs, Metabos, viewLayout)
+  #afficher_reseau(sub, Metriques, noeuds, Keggs, Metabos, viewLayout)
 
-  #afficher_interactions_reseaux(sub, nodes, Metrics, interraction_dict)
+  afficher_interactions_reseaux(sub, noeuds, Metriques, interraction_dict)
