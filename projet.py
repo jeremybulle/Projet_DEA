@@ -97,7 +97,8 @@ def ajouter_metrics(nodes, metrics, edges):
   #edges = dictionnaire des arêtes
   #metrics = liste des différentes metrics
   for node in nodes.keys():
-#   metrics["label"][nodes[node]["node"]]=node
+    list_reac=[]
+    list_meta=[]
     metrics["ID"][nodes[node]["node"]]=node
     exp=nodes[node]["expression"]
     metrics["expression"][nodes[node]["node"]]=exp
@@ -113,10 +114,12 @@ def ajouter_metrics(nodes, metrics, edges):
       metrics["color"][nodes[node]["node"]]=tlp.Color(0,100,255)
     if len(nodes[node]["reactome"].keys())!=0:
       for reac in nodes[node]["reactome"].keys():
-        metrics["reactome"][nodes[node]["node"]].append(reac)
+        list_reac.append(reac)
+      metrics["reactome"][nodes[node]["node"]]=list_reac
     if len(nodes[node]["metabo"].keys())!=0:
       for meta in nodes[node]["metabo"].keys():
-        metrics["metabo"][nodes[node]["node"]].append(meta)
+        list_meta.append(meta)
+      metrics["metabo"][nodes[node]["node"]]=list_meta
   for edge in edges.keys():
     if edges[edge]["interraction"]=="gain":
       metrics["color"][edges[edge]["edge"]]=tlp.Color(0,255,0)
